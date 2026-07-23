@@ -31,6 +31,8 @@ git clone https://github.com/njoy/NJOY2016.git
 cd NJOY2016
 mkdir build
 cd build
+# The Release build type enables -O3 optimisation. Do not omit it: with no build
+# type CMake compiles njoy without optimisation, producing a much slower executable.
 cmake -DCMAKE_BUILD_TYPE=Release ../
 make -j8
 ```
