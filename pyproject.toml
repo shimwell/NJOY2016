@@ -1,0 +1,54 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "setuptools-scm>=8"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "njoy2016"
+description = "NJOY2016 nuclear data processing system, distributed as a binary wheel"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [{ name = "The NJOY Development Team", email = "njoy@lanl.gov" }]
+requires-python = ">=3.9"
+dynamic = ["version"]
+keywords = ["nuclear data", "ENDF", "ACE", "neutronics", "njoy"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Fortran",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.urls]
+Homepage = "https://www.njoy21.io/NJOY2016/"
+Repository = "https://github.com/njoy/NJOY2016"
+Issues = "https://github.com/njoy/NJOY2016/issues"
+
+[project.scripts]
+njoy = "njoy.__main__:main"
+
+[tool.scikit-build]
+wheel.packages = ["python/njoy"]
+wheel.install-dir = "njoy"
+build.verbose = true
+logging.level = "INFO"
+cmake.args = ["-DNJOY_BUILD_TESTS=OFF"]
+metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+sdist.exclude = ["tests/", "docs/"]
+
+[tool.setuptools_scm]
+
+[tool.cibuildwheel]
+build = "cp39-*"
+build-frontend = "build"
+test-command = "njoy --version || true"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64", "aarch64"]
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
+before-all = "yum install -y gcc-gfortran || dnf install -y gcc-gfortran"
+
+[tool.cibuildwheel.macos]
+archs = ["x86_64", "arm64"]
+before-all = "brew install gfortran || brew install gcc"

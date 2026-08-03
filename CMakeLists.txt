@@ -7,6 +7,10 @@ set( CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "Supported configura
 
 project( njoy LANGUAGES Fortran )
 
+include( GNUInstallDirs )
+
+option( NJOY_BUILD_TESTS "Configure the njoy test suite" ON )
+
 message( STATUS "" )
 message( STATUS "-----------------------------------------------------------" )
 message( STATUS "" )
@@ -59,5 +63,17 @@ add_executable( njoy_executable
              "${CMAKE_CURRENT_SOURCE_DIR}/src/wimsr.f90" )
 set_target_properties( njoy_executable PROPERTIES OUTPUT_NAME njoy )
 
-enable_testing()
-add_subdirectory( tests )
+if( SKBUILD )
+  # The wheel ships the executable on its own, so link the compiler runtime
+  # statically to keep it independent of the build machine's gcc installation.
+  if( CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" )
+    target_link_options( njoy_executable PRIVATE -static-libgfortran -static-libgcc )
+  endif()
+endif()
+
+install( TARGETS njoy_executable RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}" )
+
+if( NJOY_BUILD_TESTS )
+  enable_testing()
+  add_subdirectory( tests )
+endif()
