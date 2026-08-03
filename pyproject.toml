@@ -52,16 +52,28 @@ version_scheme = "post-release"
 local_scheme = "no-local-version"
 
 [tool.cibuildwheel]
+# The wheel contains no Python extension module, so one build per platform is
+# enough; wheel.py-api = "py3" makes it valid for every supported interpreter.
 build = "cp39-*"
 build-frontend = "build"
-test-command = "njoy --version || true"
+# NJOY reads its input deck from stdin, so an empty deck is the cheapest
+# end-to-end check that the bundled executable actually runs.
+test-command = "echo stop | njoy"
 
 [tool.cibuildwheel.linux]
-archs = ["x86_64", "aarch64"]
+archs = ["x86_64"]
 manylinux-x86_64-image = "manylinux_2_28"
-manylinux-aarch64-image = "manylinux_2_28"
-before-all = "yum install -y gcc-gfortran || dnf install -y gcc-gfortran"
+before-all = "yum install -y gcc-gfortran"
 
 [tool.cibuildwheel.macos]
-archs = ["x86_64", "arm64"]
-before-all = "brew install gfortran || brew install gcc"
+archs = ["arm64"]
+before-all = "brew install gcc"
+environment = { MACOSX_DEPLOYMENT_TARGET = "14.0", FC = "gfortran-14" }
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+# Windows has no Fortran compiler by default; pull in the MinGW-w64 gfortran
+# from Chocolatey. NOTE: untested - NJOY's Windows support is the least
+# exercised of the three platforms and this may need adjustment.
+before-all = "choco install -y mingw"
+environment = { FC = "gfortran", CMAKE_GENERATOR = "Ninja" }
