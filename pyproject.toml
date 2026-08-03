@@ -4,10 +4,12 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "njoy2016"
-description = "NJOY2016 nuclear data processing system, distributed as a binary wheel"
+description = "Unofficial binary wheels of NJOY2016, built from unmodified LANL sources"
 readme = "README.md"
-license = { file = "LICENSE" }
-authors = [{ name = "The NJOY Development Team", email = "njoy@lanl.gov" }]
+license-files = ["LICENSE"]
+# NJOY2016 itself is authored by LANL; this wheel is packaged and redistributed
+# by a third party and is not endorsed by LANL (see LICENSE clause 3).
+authors = [{ name = "The NJOY Development Team (Los Alamos National Laboratory)" }]
 requires-python = ">=3.9"
 dynamic = ["version"]
 keywords = ["nuclear data", "ENDF", "ACE", "neutronics", "njoy"]
@@ -30,13 +32,24 @@ njoy = "njoy.__main__:main"
 [tool.scikit-build]
 wheel.packages = ["python/njoy"]
 wheel.install-dir = "njoy"
+# No Python extension modules are built, only a Fortran executable, so the
+# wheel is ABI-independent (but platform specific).
+wheel.py-api = "py3"
 build.verbose = true
 logging.level = "INFO"
 cmake.args = ["-DNJOY_BUILD_TESTS=OFF"]
-metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 sdist.exclude = ["tests/", "docs/"]
 
+[[tool.dynamic-metadata]]
+field = "version"
+provider = "scikit_build_core.metadata.setuptools_scm"
+
 [tool.setuptools_scm]
+# Untagged commits must not produce a .devN pre-release: pip skips pre-releases
+# unless --pre is passed, which would make such builds invisible on an index.
+# post-release + no-local-version keeps every build plainly installable.
+version_scheme = "post-release"
+local_scheme = "no-local-version"
 
 [tool.cibuildwheel]
 build = "cp39-*"
