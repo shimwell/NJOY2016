@@ -38,6 +38,9 @@ wheel.py-api = "py3"
 build.verbose = true
 logging.level = "INFO"
 cmake.args = ["-DNJOY_BUILD_TESTS=OFF"]
+# The SKBUILD branch of CMakeLists.txt uses CheckLinkerFlag (CMake >= 3.18).
+# Plain source builds never reach it and keep the project's 3.15 floor.
+cmake.version = ">=3.18"
 sdist.exclude = ["tests/", "docs/"]
 
 [[tool.dynamic-metadata]]

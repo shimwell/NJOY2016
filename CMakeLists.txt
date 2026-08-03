@@ -66,8 +66,20 @@ set_target_properties( njoy_executable PROPERTIES OUTPUT_NAME njoy )
 if( SKBUILD )
   # The wheel ships the executable on its own, so link the compiler runtime
   # statically to keep it independent of the build machine's gcc installation.
+  # libquadmath matters as much as libgfortran here: if it is left dynamic,
+  # macOS wheel repair bundles Homebrew's libquadmath, whose minimum OS target
+  # is that of the build runner and so raises the whole wheel's target.
+  # Each flag is probed rather than assumed, since a toolchain missing the
+  # matching static archive would otherwise fail to link.
   if( CMAKE_Fortran_COMPILER_ID STREQUAL "GNU" )
-    target_link_options( njoy_executable PRIVATE -static-libgfortran -static-libgcc )
+    include( CheckLinkerFlag )
+    foreach( flag -static-libgfortran -static-libgcc -static-libquadmath )
+      string( MAKE_C_IDENTIFIER "NJOY_HAVE${flag}" flag_var )
+      check_linker_flag( Fortran "${flag}" ${flag_var} )
+      if( ${flag_var} )
+        target_link_options( njoy_executable PRIVATE "${flag}" )
+      endif()
+    endforeach()
   endif()
 endif()
 
