@@ -55,6 +55,9 @@ local_scheme = "no-local-version"
 # The wheel contains no Python extension module, so one build per platform is
 # enough; wheel.py-api = "py3" makes it valid for every supported interpreter.
 build = "cp39-*"
+# musllinux would need "apk add gfortran" rather than yum, and doubles build
+# time for a niche target; enable it deliberately if Alpine support is wanted.
+skip = "*-musllinux*"
 build-frontend = "build"
 # NJOY reads its input deck from stdin, so an empty deck is the cheapest
 # end-to-end check that the bundled executable actually runs.
