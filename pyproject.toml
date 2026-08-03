@@ -70,13 +70,19 @@ before-all = "yum install -y gcc-gfortran"
 
 [tool.cibuildwheel.macos]
 archs = ["arm64"]
+# Homebrew's gcc provides an unversioned "gfortran", so FC is left unset rather
+# than pinned to a version that changes whenever the formula is bumped. In CI
+# the workflow supplies FC from setup-fortran instead.
 before-all = "brew install gcc"
-environment = { MACOSX_DEPLOYMENT_TARGET = "14.0", FC = "gfortran-14" }
+environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
 
 [tool.cibuildwheel.windows]
 archs = ["AMD64"]
-# Windows has no Fortran compiler by default; pull in the MinGW-w64 gfortran
-# from Chocolatey. NOTE: untested - NJOY's Windows support is the least
-# exercised of the three platforms and this may need adjustment.
+# Windows has no Fortran compiler by default; pull in the MinGW-w64 gfortran.
+# NOTE: untested - NJOY's Windows support is the least exercised of the three
+# platforms and this may need adjustment.
 before-all = "choco install -y mingw"
 environment = { FC = "gfortran", CMAKE_GENERATOR = "Ninja" }
+# "echo stop | njoy" is unreliable under cmd.exe, which appends a trailing
+# space to the echoed deck; check the packaging instead of the stdin path.
+test-command = "python -c \"import njoy; print(njoy.executable())\""
