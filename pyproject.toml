@@ -7,9 +7,10 @@ name = "njoy2016"
 description = "Unofficial binary wheels of NJOY2016, built from unmodified LANL sources"
 readme = "README.md"
 license-files = ["LICENSE"]
-# NJOY2016 itself is authored by LANL; this wheel is packaged and redistributed
-# by a third party and is not endorsed by LANL (see LICENSE clause 3).
-authors = [{ name = "The NJOY Development Team (Los Alamos National Laboratory)" }]
+# Deliberately no "authors" field. NJOY2016 is authored by LANL, but naming LANL
+# as the author of this third-party repackaging could imply involvement in or
+# endorsement of it, which LICENSE clause 3 forbids. Attribution lives in the
+# summary and in the LICENSE shipped inside every wheel instead.
 requires-python = ">=3.9"
 dynamic = ["version"]
 keywords = ["nuclear data", "ENDF", "ACE", "neutronics", "njoy"]
