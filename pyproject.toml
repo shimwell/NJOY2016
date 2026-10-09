@@ -1,0 +1,92 @@
+[build-system]
+requires = ["scikit-build-core>=0.10", "setuptools-scm>=8"]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "njoy2016"
+description = "Unofficial binary wheels of NJOY2016, built from unmodified LANL sources"
+readme = "README.md"
+license-files = ["LICENSE"]
+# Deliberately no "authors" field. NJOY2016 is authored by LANL, but naming LANL
+# as the author of this third-party repackaging could imply involvement in or
+# endorsement of it, which LICENSE clause 3 forbids. Attribution lives in the
+# summary and in the LICENSE shipped inside every wheel instead.
+requires-python = ">=3.9"
+dynamic = ["version"]
+keywords = ["nuclear data", "ENDF", "ACE", "neutronics", "njoy"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Fortran",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+]
+
+[project.urls]
+Homepage = "https://www.njoy21.io/NJOY2016/"
+Repository = "https://github.com/njoy/NJOY2016"
+Issues = "https://github.com/njoy/NJOY2016/issues"
+
+[project.scripts]
+njoy = "njoy.__main__:main"
+
+[tool.scikit-build]
+wheel.packages = ["python/njoy"]
+wheel.install-dir = "njoy"
+# No Python extension modules are built, only a Fortran executable, so the
+# wheel is ABI-independent (but platform specific).
+wheel.py-api = "py3"
+build.verbose = true
+logging.level = "INFO"
+cmake.args = ["-DNJOY_BUILD_TESTS=OFF"]
+# The SKBUILD branch of CMakeLists.txt uses CheckLinkerFlag (CMake >= 3.18).
+# Plain source builds never reach it and keep the project's 3.15 floor.
+cmake.version = ">=3.18"
+sdist.exclude = ["tests/", "docs/"]
+
+[[tool.dynamic-metadata]]
+field = "version"
+provider = "scikit_build_core.metadata.setuptools_scm"
+
+[tool.setuptools_scm]
+# Untagged commits must not produce a .devN pre-release: pip skips pre-releases
+# unless --pre is passed, which would make such builds invisible on an index.
+# post-release + no-local-version keeps every build plainly installable.
+version_scheme = "post-release"
+local_scheme = "no-local-version"
+
+[tool.cibuildwheel]
+# The wheel contains no Python extension module, so one build per platform is
+# enough; wheel.py-api = "py3" makes it valid for every supported interpreter.
+build = "cp39-*"
+# musllinux would need "apk add gfortran" rather than yum, and doubles build
+# time for a niche target; enable it deliberately if Alpine support is wanted.
+skip = "*-musllinux*"
+build-frontend = "build"
+# NJOY reads its input deck from stdin, so an empty deck is the cheapest
+# end-to-end check that the bundled executable actually runs.
+test-command = "echo stop | njoy"
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
+manylinux-x86_64-image = "manylinux_2_28"
+before-all = "yum install -y gcc-gfortran"
+
+[tool.cibuildwheel.macos]
+archs = ["arm64"]
+# Homebrew's gcc provides an unversioned "gfortran", so FC is left unset rather
+# than pinned to a version that changes whenever the formula is bumped. In CI
+# the workflow supplies FC from setup-fortran instead.
+before-all = "brew install gcc"
+environment = { MACOSX_DEPLOYMENT_TARGET = "14.0" }
+
+[tool.cibuildwheel.windows]
+archs = ["AMD64"]
+# Windows has no Fortran compiler by default; pull in the MinGW-w64 gfortran.
+# NOTE: untested - NJOY's Windows support is the least exercised of the three
+# platforms and this may need adjustment.
+before-all = "choco install -y mingw"
+environment = { FC = "gfortran", CMAKE_GENERATOR = "Ninja" }
+# "echo stop | njoy" is unreliable under cmd.exe, which appends a trailing
+# space to the echoed deck; check the packaging instead of the stdin path.
+test-command = "python -c \"import njoy; print(njoy.executable())\""

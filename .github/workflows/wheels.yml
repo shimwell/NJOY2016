@@ -1,0 +1,87 @@
+name: Build wheels
+
+# Builds binary wheels and uploads them as downloadable run artifacts.
+# This workflow does not publish anywhere - artifacts are retrieved from the
+# run summary page, or with: gh run download <run-id>
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  wheels:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      # Keep building the other platforms if one fails; Windows in particular
+      # is the least exercised target and should not block Linux/macOS wheels.
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            name: linux-x86_64
+          - os: macos-latest
+            name: macos-arm64
+          - os: windows-latest
+            name: windows-amd64
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # setuptools-scm derives the version from git tags, so the default
+          # shallow clone would yield a fallback version instead of 2016.79.
+          fetch-depth: 0
+
+      # Linux builds run inside a manylinux container and install gfortran
+      # there via before-all in pyproject.toml. macOS and Windows build
+      # directly on the runner, so the compiler is installed here instead.
+      - name: Set up gfortran
+        id: fortran
+        if: runner.os != 'Linux'
+        uses: fortran-lang/setup-fortran@v1
+        with:
+          compiler: gcc
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v4.1.1
+        env:
+          # Override the pyproject defaults with the compiler this runner
+          # actually has, rather than a pinned gfortran version.
+          CIBW_BEFORE_ALL_MACOS: ""
+          CIBW_ENVIRONMENT_MACOS: >
+            MACOSX_DEPLOYMENT_TARGET=14.0
+            FC=${{ steps.fortran.outputs.fc }}
+          CIBW_BEFORE_ALL_WINDOWS: ""
+          CIBW_ENVIRONMENT_WINDOWS: >
+            FC=${{ steps.fortran.outputs.fc }}
+            CMAKE_GENERATOR=Ninja
+
+      - uses: actions/upload-artifact@v7
+        with:
+          # upload-artifact v4+ requires unique names per matrix job.
+          name: wheels-${{ matrix.name }}
+          path: ./wheelhouse/*.whl
+          if-no-files-found: error
+
+  sdist:
+    name: sdist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Build sdist
+        run: |
+          python -m pip install --upgrade build
+          python -m build --sdist
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sdist
+          path: ./dist/*.tar.gz
+          if-no-files-found: error
